@@ -296,6 +296,13 @@ AfficherPage(0)
 #
 #########################################################################
 
+score = 0
+def checkPacGum(x_check,y_check):
+   global score, GUM
+   if(GUM[x_check][y_check] == 1):
+      score +=100
+      GUM[x_check][y_check] = 0
+
       
 def PacManPossibleMove():
    global pacman
@@ -322,6 +329,7 @@ def IAPacman():
    choix = random.randrange(len(L))
    pacman.x += L[choix][0]
    pacman.y += L[choix][1]
+   checkPacGum(pacman.x,pacman.y)
    
    # juste pour montrer comment on se sert de la fonction SetInfo1
    for x in range(LARGEUR):
@@ -348,7 +356,7 @@ def IAGhosts():
 #  Boucle principale de votre jeu appelée toutes les 500ms
 
 iteration = 0
-score = 0
+
 def PlayOneTurn():
    global iteration, score
    
