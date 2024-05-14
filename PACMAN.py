@@ -52,16 +52,33 @@ def PlacementsGUM():  # placements des pacgums
             
 GUM = PlacementsGUM()   
    
-   
+#### classe pac-man pour la gestion de pac-man ####
+class PacMan:
+   def __init__(self,x,y):
+      self.x = x
+      self.y = y
+      self.modes = ["recherche", "fuite", "chasse"]
+      self.currentMode = "recherche"
+
+   def change_mode(self, newMode):
+      if(newMode in self.modes):
+         self.currentMode = newMode
+
+#### classe ghosts pour gérer les fantômes ####
+class Ghost:
+   def __init__(self,x,y,color):
+      self.x = x
+      self.y = y
+      self.color = color
       
 
-PacManPos = [5,5]
+pacman = PacMan(5,5)
 
 Ghosts  = []
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "pink"  ]   )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "orange"] )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "cyan"  ]   )
-Ghosts.append(  [LARGEUR//2, HAUTEUR // 2 ,  "red"   ]     )         
+Ghosts.append(  Ghost(LARGEUR//2, HAUTEUR // 2 ,  "pink"  )   )
+Ghosts.append(  Ghost(LARGEUR//2, HAUTEUR // 2 ,  "orange")   )
+Ghosts.append(  Ghost(LARGEUR//2, HAUTEUR // 2 ,  "cyan"  )   )
+Ghosts.append(  Ghost(LARGEUR//2, HAUTEUR // 2 ,  "red"   )   )         
 
 
 
@@ -233,8 +250,8 @@ def Affiche(PacmanColor,message):
          
   
    # dessine pacman
-   xx = To(PacManPos[0]) 
-   yy = To(PacManPos[1])
+   xx = To(pacman.x) 
+   yy = To(pacman.y)
    e = 20
    anim_bouche = (anim_bouche+1)%len(animPacman)
    ouv_bouche = animPacman[anim_bouche] 
@@ -246,11 +263,11 @@ def Affiche(PacmanColor,message):
    #dessine les fantomes
    dec = -3
    for P in Ghosts:
-      xx = To(P[0]) 
-      yy = To(P[1])
+      xx = To(P.x) 
+      yy = To(P.y)
       e = 16
       
-      coul = P[2]
+      coul = P.color
       # corps du fantome
       CreateCircle(dec+xx,dec+yy-e+6,e,coul)
       canvas.create_rectangle(dec+xx-e,dec+yy-e,dec+xx+e+1,dec+yy+e, fill=coul, width  = 0)
@@ -281,8 +298,9 @@ AfficherPage(0)
 
       
 def PacManPossibleMove():
+   global pacman
    L = []
-   x,y = PacManPos
+   x,y = pacman.x, pacman.y
    if ( TBL[x  ][y-1] == 0 ): L.append((0,-1))
    if ( TBL[x  ][y+1] == 0 ): L.append((0, 1))
    if ( TBL[x+1][y  ] == 0 ): L.append(( 1,0))
@@ -298,12 +316,12 @@ def GhostsPossibleMove(x,y):
    return L
    
 def IAPacman():
-   global PacManPos, Ghosts
+   global pacman, Ghosts
    #deplacement Pacman
    L = PacManPossibleMove()
    choix = random.randrange(len(L))
-   PacManPos[0] += L[choix][0]
-   PacManPos[1] += L[choix][1]
+   pacman.x += L[choix][0]
+   pacman.y += L[choix][1]
    
    # juste pour montrer comment on se sert de la fonction SetInfo1
    for x in range(LARGEUR):
@@ -318,10 +336,10 @@ def IAPacman():
 def IAGhosts():
    #deplacement Fantome
    for F in Ghosts:
-      L = GhostsPossibleMove(F[0],F[1])
+      L = GhostsPossibleMove(F.x,F.y)
       choix = random.randrange(len(L))
-      F[0] += L[choix][0]
-      F[1] += L[choix][1]
+      F.x += L[choix][0]
+      F.y += L[choix][1]
       
   
  
@@ -330,15 +348,16 @@ def IAGhosts():
 #  Boucle principale de votre jeu appelée toutes les 500ms
 
 iteration = 0
+score = 0
 def PlayOneTurn():
-   global iteration
+   global iteration, score
    
    if not PAUSE_FLAG : 
       iteration += 1
       if iteration % 2 == 0 :   IAPacman()
       else:                     IAGhosts()
    
-   Affiche(PacmanColor = "yellow", message = "message")  
+   Affiche(PacmanColor = "yellow", message = f'Score : {score}')  
  
  
 ###########################################:
