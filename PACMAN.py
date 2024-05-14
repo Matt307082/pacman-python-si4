@@ -47,7 +47,9 @@ def PlacementsGUM():  # placements des pacgums
    for x in range(LARGEUR):
       for y in range(HAUTEUR):
          if ( TBL[x][y] == 0):
-            GUM[x][y] = 1
+            random_number = random.randint(1,6)
+            if(random_number == 1):
+               GUM[x][y] = 1
    return GUM
             
 GUM = PlacementsGUM()   
