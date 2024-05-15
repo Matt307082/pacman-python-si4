@@ -39,6 +39,39 @@ TBL = CreateArray([
 HAUTEUR = TBL.shape [1]      
 LARGEUR = TBL.shape [0]  
 
+#### classe personnage pour gérér les différents personnages du jeu ####
+class Perso:
+   def __init__(self,x,y):
+      self.x = x
+      self.y = y
+      self.directions = {"up" : TBL[self.x  ][self.y-1], 
+                         "down" : TBL[self.x  ][self.y+1], 
+                         "right" : TBL[self.x+1][self.y  ], 
+                         "left" : TBL[self.x-1][self.y  ]}
+
+#### classe pac-man pour la gestion de pac-man ####
+class PacMan(Perso):
+   def __init__(self,x,y):
+      Perso.__init__(self,x,y)
+      self.modes = ["recherche", "fuite", "chasse"]
+      self.currentMode = "recherche"
+
+   def change_mode(self, newMode):
+      if(newMode in self.modes):
+         self.currentMode = newMode
+
+#### classe ghosts pour gérer les fantômes ####
+class Ghost(Perso):
+   def __init__(self,x,y,color):
+      Perso.__init__(self,x,y)
+      self.color = color
+
+#### classe info case pour stocker les distances par rapport aux fantômes et aux pac gommes ####
+class InfoCase:
+   def __init__(self,d_pacGum,d_ghost):
+      self.d_pacGum = d_pacGum
+      self.d_ghost = d_ghost
+      
 # placements des pacgums et des fantomes
 
 def PlacementsGUM():  # placements des pacgums
@@ -51,28 +84,20 @@ def PlacementsGUM():  # placements des pacgums
             if(random_number == 1):
                GUM[x][y] = 1
    return GUM
-            
-GUM = PlacementsGUM()   
+
+def initInfos():  # initialistaion des infos sur les cases
+   INFOS = np.empty(TBL.shape, dtype=np.object_)
    
-#### classe pac-man pour la gestion de pac-man ####
-class PacMan:
-   def __init__(self,x,y):
-      self.x = x
-      self.y = y
-      self.modes = ["recherche", "fuite", "chasse"]
-      self.currentMode = "recherche"
-
-   def change_mode(self, newMode):
-      if(newMode in self.modes):
-         self.currentMode = newMode
-
-#### classe ghosts pour gérer les fantômes ####
-class Ghost:
-   def __init__(self,x,y,color):
-      self.x = x
-      self.y = y
-      self.color = color
-      
+   for x in range(LARGEUR):
+      for y in range(HAUTEUR):
+         if ( TBL[x][y] == 0):
+            INFOS[x][y] = InfoCase(100,-1)
+         else:
+            INFOS[x][y] = InfoCase(1000,-1)
+   return INFOS
+            
+GUM = PlacementsGUM() 
+INFOS = initInfos()
 
 pacman = PacMan(5,5)
 
@@ -305,23 +330,27 @@ def checkPacGum(x_check,y_check):
       score +=100
       GUM[x_check][y_check] = 0
 
+def refreshDirection(perso):
+   perso.directions = {"up" : TBL[perso.x  ][perso.y-1], 
+                        "down" : TBL[perso.x  ][perso.y+1], 
+                        "right" : TBL[perso.x+1][perso.y  ], 
+                        "left" : TBL[perso.x-1][perso.y  ]}
       
 def PacManPossibleMove():
    global pacman
    L = []
-   x,y = pacman.x, pacman.y
-   if ( TBL[x  ][y-1] == 0 ): L.append((0,-1))
-   if ( TBL[x  ][y+1] == 0 ): L.append((0, 1))
-   if ( TBL[x+1][y  ] == 0 ): L.append(( 1,0))
-   if ( TBL[x-1][y  ] == 0 ): L.append((-1,0))
+   if ( pacman.directions["up"]    == 0 ): L.append((0,-1))
+   if ( pacman.directions["down"]  == 0 ): L.append((0, 1))
+   if ( pacman.directions["right"] == 0 ): L.append(( 1,0))
+   if ( pacman.directions["left"]  == 0 ): L.append((-1,0))
    return L
    
-def GhostsPossibleMove(x,y):
+def GhostsPossibleMove(ghost):
    L = []
-   if ( TBL[x  ][y-1] == 2 ): L.append((0,-1))
-   if ( TBL[x  ][y+1] == 2 ): L.append((0, 1))
-   if ( TBL[x+1][y  ] == 2 ): L.append(( 1,0))
-   if ( TBL[x-1][y  ] == 2 ): L.append((-1,0))
+   if ( ghost.directions["up"]    == 2 ): L.append((0,-1))
+   if ( ghost.directions["down"]  == 2 ): L.append((0, 1))
+   if ( ghost.directions["right"] == 2 ): L.append(( 1,0))
+   if ( ghost.directions["left"]  == 2 ): L.append((-1,0))
    return L
    
 def IAPacman():
@@ -331,25 +360,29 @@ def IAPacman():
    choix = random.randrange(len(L))
    pacman.x += L[choix][0]
    pacman.y += L[choix][1]
+   refreshDirection(pacman)
    checkPacGum(pacman.x,pacman.y)
    
    # juste pour montrer comment on se sert de la fonction SetInfo1
    for x in range(LARGEUR):
       for y in range(HAUTEUR):
-         info = x
-         if   x % 3 == 1 : info = "+∞"
-         elif x % 3 == 2 : info = ""
-         SetInfo1(x,y,info)
+         if(TBL[x][y] == 0):
+            if(GUM[x][y] == 1):
+               SetInfo1(x,y,0)
+               INFOS[x][y].d_pacGum = 0
+            else:
+               SetInfo1(x,y,100)
    
  
    
 def IAGhosts():
    #deplacement Fantome
    for F in Ghosts:
-      L = GhostsPossibleMove(F.x,F.y)
+      L = GhostsPossibleMove(F)
       choix = random.randrange(len(L))
       F.x += L[choix][0]
       F.y += L[choix][1]
+      refreshDirection(F)
       
   
  
@@ -374,10 +407,3 @@ def PlayOneTurn():
 #  demarrage de la fenetre - ne pas toucher
 
 Window.mainloop()
-
- 
-   
-   
-    
-   
-   
