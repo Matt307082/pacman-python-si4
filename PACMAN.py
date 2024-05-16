@@ -313,7 +313,8 @@ def Affiche(PacmanColor,message):
    
    canvas.create_text(screeenWidth // 2, screenHeight- 50 , text = "PAUSE : PRESS SPACE", fill ="yellow", font = PoliceTexte)
    canvas.create_text(screeenWidth // 2, screenHeight- 20 , text = message, fill ="yellow", font = PoliceTexte)
-   
+   if(GAME_OVER):
+      canvas.create_text(screeenWidth // 2, screenHeight // 2 , text = "GAME OVER", fill ="yellow", font = PoliceTexte)
  
 AfficherPage(0)
             
@@ -323,12 +324,20 @@ AfficherPage(0)
 #
 #########################################################################
 
+GAME_OVER = False
+
 score = 0
 def checkPacGum(x_check,y_check):
    global score, GUM
    if(GUM[x_check][y_check] == 1):
       score +=100
       GUM[x_check][y_check] = 0
+
+def checkCollisionPacmanGhost(pacman, ghosts):
+   global GAME_OVER
+   for ghost in ghosts:
+      if(pacman.x == ghost.x and pacman.y == ghost.y):
+         GAME_OVER = True
 
 def refreshDirection(perso):
    perso.directions = {"up" : TBL[perso.x  ][perso.y-1], 
@@ -347,14 +356,14 @@ def PacManPossibleMove():
    
 def GhostsPossibleMove(ghost):
    L = []
-   if ( ghost.directions["up"]    == 2 ): L.append((0,-1))
-   if ( ghost.directions["down"]  == 2 ): L.append((0, 1))
-   if ( ghost.directions["right"] == 2 ): L.append(( 1,0))
-   if ( ghost.directions["left"]  == 2 ): L.append((-1,0))
+   if ( ghost.directions["up"]    != 1 ): L.append((0,-1))
+   if ( ghost.directions["down"]  != 1 ): L.append((0, 1))
+   if ( ghost.directions["right"] != 1 ): L.append(( 1,0))
+   if ( ghost.directions["left"]  != 1 ): L.append((-1,0))
    return L
    
 def IAPacman():
-   global pacman, Ghosts
+   global pacman
    #deplacement Pacman
    L = PacManPossibleMove()
    choix = random.randrange(len(L))
@@ -393,13 +402,14 @@ def IAGhosts():
 iteration = 0
 
 def PlayOneTurn():
-   global iteration, score
+   global iteration, score, pacman
    
-   if not PAUSE_FLAG : 
+   if not PAUSE_FLAG and not GAME_OVER: 
       iteration += 1
       if iteration % 2 == 0 :   IAPacman()
       else:                     IAGhosts()
    
+   checkCollisionPacmanGhost(pacman,Ghosts)
    Affiche(PacmanColor = "yellow", message = f'Score : {score}')  
  
  
