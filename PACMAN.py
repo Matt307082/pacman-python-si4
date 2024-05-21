@@ -134,7 +134,7 @@ def PlacementsGUM():
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
-                random_number = random.randint(1, 6)
+                random_number = random.randint(1, 10)
                 if random_number == 1:
                     GUM[x][y] = 1
     return GUM
@@ -465,12 +465,12 @@ def IAPacman():
     global pacman
 
     # Déplacement Pacman
-    L = PacManPossibleMove()
-    choix = random.randrange(len(L))
-    pacman.x += L[choix][0]
-    pacman.y += L[choix][1]
+    move = PacManMinimalMoveToPacgum(PacManPossibleMove())
+    pacman.x += move[0]
+    pacman.y += move[1]
     refreshDirection(pacman)
     checkPacGum(pacman.x, pacman.y)
+    # @todo modifier pour raffraichir la carte de pacgum et donc l'autre carte aussi
 
     # Utilisation SetInfo1
     for x in range(LARGEUR):
@@ -498,26 +498,6 @@ def IAGhosts():
 # region Helpers
 
 
-# region Checkers
-
-
-def checkPacGum(x_check, y_check):
-    global score, GUM
-    if GUM[x_check][y_check] == 1:
-        score += 100
-        GUM[x_check][y_check] = 0
-
-
-def checkCollisionPacmanGhost(pacman, ghosts):
-    global GAME_OVER
-    for ghost in ghosts:
-        if pacman.x == ghost.x and pacman.y == ghost.y:
-            GAME_OVER = True
-
-
-# endregion
-
-
 def refreshDirection(perso):
     perso.directions = {
         "up": TBL[perso.x][perso.y - 1],
@@ -542,6 +522,15 @@ def PacManPossibleMove():
     if pacman.directions["left"] == 0:
         L.append((-1, 0))
     return L
+
+
+def PacManMinimalMoveToPacgum(possibleMoves):
+    global pacman
+    moveValues = {
+        move: DIST_GUM[pacman.x + move[0]][pacman.y + move[1]] for move in possibleMoves
+    }
+    minimalMove = min(moveValues, key=moveValues.get)
+    return minimalMove
 
 
 def GhostsPossibleMove(ghost):
@@ -624,6 +613,26 @@ def HasBeenModified(firstMap, secondMap):
 # endregion
 
 
+# region Checkers
+
+
+def checkPacGum(x_check, y_check):
+    global score, GUM
+    if GUM[x_check][y_check] == 1:
+        score += 100
+        GUM[x_check][y_check] = 0
+
+
+def checkCollisionPacmanGhost(pacman, ghosts):
+    global GAME_OVER
+    for ghost in ghosts:
+        if pacman.x == ghost.x and pacman.y == ghost.y:
+            GAME_OVER = True
+
+
+# endregion
+
+
 # endregion
 
 
@@ -640,7 +649,6 @@ def PlayOneTurn():
     global iteration, score, pacman
 
     if not PAUSE_FLAG and not GAME_OVER:
-        UpdateDistanceMap(GUM, DIST_GUM)
         # UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         iteration += 1
         if iteration % 2 == 0:
@@ -649,6 +657,7 @@ def PlayOneTurn():
             IAGhosts()
 
     checkCollisionPacmanGhost(pacman, Ghosts)
+    UpdateDistanceMap(GUM, DIST_GUM)
     Affiche(PacmanColor="yellow", message=f"Score : {score}")
 
 
