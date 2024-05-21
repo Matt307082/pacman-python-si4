@@ -197,6 +197,16 @@ Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "orange"))
 Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "cyan"))
 Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "red"))
 
+
+def PlacementGHOSTS():
+    GHOSTS = np.zeros(TBL.shape, dtype=np.int32)
+    for g in Ghosts:
+        GHOSTS[g.x][g.y] = 1
+    return GHOSTS
+
+
+GHOSTS = PlacementGHOSTS()
+
 # endregion
 
 # endregion
@@ -580,6 +590,11 @@ def GhostsPossibleMove(ghost):
 
 
 # endregion
+
+
+# region Carte distances
+
+# def calculateDistanceMap()
 
 
 # endregion
