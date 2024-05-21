@@ -579,7 +579,7 @@ def UpdateDistanceMap(inputMap, outputMap):
         for row in range(rows):
             for col in range(cols):
                 # Vérifie si : On n'est pas sur une pacgum, On n'est pas sur un mur
-                if outputMap[row][col] != 0 and TBL[row][col] != 1:
+                if inputMap[row][col] == 0 and TBL[row][col] != 1:
                     neighbors = InitializeNeighbors(row, col, outputMap)
                     if len(neighbors) != 0:
                         outputMap[row][col] = min(neighbors) + 1
