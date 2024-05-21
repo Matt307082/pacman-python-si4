@@ -57,19 +57,6 @@ LARGEUR = TBL.shape[0]
 
 # region Classes
 
-# region InfoCase
-
-
-#########################################################################
-#   InfoCase : Définit les informations stocké dans une case
-#########################################################################
-class InfoCase:
-    def __init__(self, d_pacGum, d_ghost):
-        self.d_pacGum = d_pacGum
-        self.d_ghost = d_ghost
-
-
-# endregion
 
 # region Perso
 
@@ -157,24 +144,6 @@ GUM = PlacementsGUM()
 
 # endregion
 
-# region Information Cases
-
-
-def initInfos():  # initialistaion des infos sur les cases
-    INFOS = np.empty(TBL.shape, dtype=np.object_)
-
-    for x in range(LARGEUR):
-        for y in range(HAUTEUR):
-            if TBL[x][y] == 0:  #
-                INFOS[x][y] = InfoCase(100, -1)
-            else:
-                INFOS[x][y] = InfoCase(1000, -1)
-    return INFOS
-
-
-INFOS = initInfos()
-
-# endregion
 
 # region PacMan
 
@@ -507,11 +476,10 @@ def IAPacman():
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
-                if GUM[x][y] == 1:
-                    SetInfo1(x, y, 0)
-                    INFOS[x][y].d_pacGum = 0
-                else:
-                    SetInfo1(x, y, 100)
+                # Information PacGum
+                SetInfo1(x, y, DIST_GUM[x][y])
+                # Information Ghosts
+                # SetInfo2(x, y, DIST_GHOSTS)
 
 
 def IAGhosts():
@@ -594,7 +562,66 @@ def GhostsPossibleMove(ghost):
 
 # region Carte distances
 
-# def calculateDistanceMap()
+
+def InitializeDistanceMap(inputMap):
+    outputMap = np.full(
+        TBL.shape, fill_value=100, dtype=np.int32
+    )  # On remplie un nouveau tableau, de la forme de TBL avec la valeur 100
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            if inputMap[x][y] == 1:
+                outputMap[x][y] = 0
+            # Dès lors qu'on est sur une case recherché, on l'initialize à 0
+    return outputMap
+
+
+DIST_GUM = InitializeDistanceMap(GUM)
+DIST_GHOSTS = InitializeDistanceMap(GHOSTS)
+
+
+def UpdateDistanceMap(inputMap, outputMap):
+    rows, cols = len(inputMap) - 1, len(inputMap[0]) - 1
+    hasBeenModified = True
+    while hasBeenModified:
+        # On garde une copie pour la comparer après
+        oldOutputMap = outputMap
+
+        # On parcours le tableau pour mettre à jours les valeurs
+        for row in range(rows):
+            for col in range(cols):
+                # Vérifie si : On n'est pas sur une pacgum, On n'est pas sur un mur
+                if outputMap[row][col] != 0 and TBL[row][col] != 1:
+                    neighbors = InitializeNeighbors(row, col, outputMap)
+                    if len(neighbors) != 0:
+                        outputMap[row][col] = min(neighbors) + 1
+
+        # On test si on a modifié la carte (bug possible)
+        hasBeenModified = HasBeenModified(outputMap, oldOutputMap)
+
+
+def InitializeNeighbors(row, col, outputMap):
+    neighbors = []
+    if TBL[row + 1][col] != 1 and outputMap[row + 1][col] != 100:
+        neighbors.append(outputMap[row + 1][col])
+    if TBL[row][col + 1] != 1 and outputMap[row][col + 1] != 100:
+        neighbors.append(outputMap[row][col + 1])
+    if TBL[row - 1][col] != 1 and outputMap[row - 1][col] != 100:
+        neighbors.append(outputMap[row - 1][col])
+    if TBL[row][col - 1] != 1 and outputMap[row][col - 1] != 100:
+        neighbors.append(outputMap[row][col - 1])
+    return neighbors
+
+
+def HasBeenModified(firstMap, secondMap):
+    rows, cols = len(firstMap) - 1, len(secondMap[0]) - 1
+    for row in range(rows):
+        for col in range(cols):
+            if firstMap[row][col] != secondMap[row][col]:
+                return True
+    return False
+
+
+# endregion
 
 
 # endregion
@@ -613,6 +640,8 @@ def PlayOneTurn():
     global iteration, score, pacman
 
     if not PAUSE_FLAG and not GAME_OVER:
+        UpdateDistanceMap(GUM, DIST_GUM)
+        # UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         iteration += 1
         if iteration % 2 == 0:
             IAPacman()
