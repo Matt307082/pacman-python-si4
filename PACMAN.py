@@ -1,6 +1,6 @@
 # region Imports
 
-import random
+import random, time
 import tkinter as tk
 from tkinter import font as tkfont
 import numpy as np
@@ -99,19 +99,26 @@ class PacMan(Perso):
         self.modes = ["recherche", "fuite", "chasse"]
         self.currentMode = "recherche"
 
+    def change_mode(self, newMode):
+      if(newMode in self.modes):
+         self.currentMode = newMode
+
     def checkPacGum(self):
         global score
+        timer = -1
         if GUM[self.x][self.y] == 1:
             score += 100
             GUM[self.x][self.y] = 0
-            self.currentMode = "chasse"
+            self.change_mode("chasse")
+            timer = time.time()
+        return timer
 
     def checkForModeChange(self):
         if self.currentMode != "chasse":
             if DIST_GHOSTS[self.x][self.y] < 4:
-                self.currentMode = "fuite"
+                self.change_mode("fuite")
             else:
-                self.currentMode = "recherche"
+                self.change_mode("recherche")
 
 
 # endregion
@@ -326,7 +333,7 @@ def AfficherPage(id):
 
 def WindowAnim():
     PlayOneTurn()
-    Window.after(500, WindowAnim)  # Previously 333
+    Window.after(333, WindowAnim)  # Previously 333
 
 
 Window.after(100, WindowAnim)
@@ -513,9 +520,10 @@ def IAPacman():
     pacman.x += move[0]
     pacman.y += move[1]
     pacman.refreshDirection()
-    pacman.checkPacGum()
+    timer = pacman.checkPacGum()
     pacman.checkForModeChange()
     DisplayDistInfos()
+    return timer
 
 
 def IAGhosts():
@@ -692,10 +700,11 @@ def checkCollisionPacmanGhost(pacman, ghosts):
 #########################################################################
 
 iteration = 0
+tour_mode_chasseur = 0
 
 
 def PlayOneTurn():
-    global iteration, score, pacman
+    global iteration,tour_mode_chasseur, score, pacman
 
     if pacman.currentMode == "chasse":
         PacmanColor = "white"
@@ -704,6 +713,13 @@ def PlayOneTurn():
 
     if not PAUSE_FLAG and not GAME_OVER:
         iteration += 1
+
+        if pacman.currentMode == "chasse":
+            tour_mode_chasseur += 1
+            if(tour_mode_chasseur == 15):
+                pacman.change_mode("recherche")
+                tour_mode_chasseur = 0
+
         if iteration % 2 == 0:
             IAPacman()
             UpdateDistanceMap(GUM, DIST_GUM)
