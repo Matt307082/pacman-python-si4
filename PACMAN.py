@@ -76,7 +76,7 @@ class Perso:
             "left": TBL[self.x - 1][self.y],
         }
 
-    def refreshDirection(self):
+    def RefreshDirection(self):
         self.directions = {
             "up": TBL[self.x][self.y - 1],
             "down": TBL[self.x][self.y + 1],
@@ -99,19 +99,31 @@ class PacMan(Perso):
         self.modes = ["recherche", "fuite", "chasse"]
         self.currentMode = "recherche"
 
-    def checkPacGum(self):
+    def CheckPacGum(self):
         global score
         if GUM[self.x][self.y] == 1:
             score += 100
             GUM[self.x][self.y] = 0
             self.currentMode = "chasse"
 
-    def checkForModeChange(self):
+    def CheckForModeChange(self):
         if self.currentMode != "chasse":
             if DIST_GHOSTS[self.x][self.y] < 4:
                 self.currentMode = "fuite"
             else:
                 self.currentMode = "recherche"
+
+    def GetPossibleMoves(self):
+        L = []
+        if self.directions["up"] == 0:
+            L.append((0, -1))
+        if self.directions["down"] == 0:
+            L.append((0, 1))
+        if self.directions["right"] == 0:
+            L.append((1, 0))
+        if self.directions["left"] == 0:
+            L.append((-1, 0))
+        return L
 
 
 # endregion
@@ -126,6 +138,18 @@ class Ghost(Perso):
     def __init__(self, x, y, color):
         Perso.__init__(self, x, y)
         self.color = color
+
+    def GetPossibleMoves(self):
+        L = []
+        if self.directions["up"] != 1:
+            L.append((0, -1))
+        if self.directions["down"] != 1:
+            L.append((0, 1))
+        if self.directions["right"] != 1:
+            L.append((1, 0))
+        if self.directions["left"] != 1:
+            L.append((-1, 0))
+        return L
 
 
 # endregion
@@ -496,37 +520,56 @@ score = 0
 # endregion
 
 
-# region Intelligence Artificielle
+# region Intelligences Artificielles
 
 
 def IAPacman():
-    # Utilisation PacMan gloable
+    # Utilisation PacMan globale
     global pacman
 
     # Déplacement Pacman
     if pacman.currentMode == "recherche":
-        move = PacManMinimalMoveToPacgum(PacManPossibleMove())
+        move = PacManMinimalMoveToPacGum(pacman.GetPossibleMoves())
     elif pacman.currentMode == "fuite":
-        move = PacManFleeMove(PacManPossibleMove())
+        move = PacManFleeMove(pacman.GetPossibleMoves())
     elif pacman.currentMode == "chasse":
-        move = PacManMinimalMoveToGhost(PacManPossibleMove())
+        move = PacManMinimalMoveToGhost(pacman.GetPossibleMoves())
     pacman.x += move[0]
     pacman.y += move[1]
-    pacman.refreshDirection()
-    pacman.checkPacGum()
-    pacman.checkForModeChange()
+    pacman.RefreshDirection()
+    pacman.CheckPacGum()
+    pacman.CheckForModeChange()
     DisplayDistInfos()
 
 
 def IAGhosts():
+    # Utilisation PacMan globale
+    global pacman
+
     # Déplacement Fantome
     for F in Ghosts:
-        L = GhostsPossibleMove(F)
-        choix = random.randrange(len(L))
         old_x, old_y = F.x, F.y
-        F.x += L[choix][0]
-        F.y += L[choix][1]
-        F.refreshDirection()
+
+        if TBL[F.x][F.y] == 2:
+            F.y -= 1
+
+        elif IsInCorridor(F):
+            if F.direction == "up":
+                F.y -= 1
+            elif F.direction == "down":
+                F.y += 1
+            elif F.direction == "left":
+                F.x -= 1
+            elif F.direction == "right":
+                F.x += 1
+
+        else:
+            L = F.GetPossibleMoves()
+            move = L[random.randint(0, len(L) - 1)]
+            F.x += move[0]
+            F.y += move[1]
+
+        F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
         DisplayDistInfos()
 
@@ -534,24 +577,13 @@ def IAGhosts():
 # endregion
 
 
-# region Possible Moves
+# region Gestions Mouvement
 
 
-def PacManPossibleMove():
-    global pacman
-    L = []
-    if pacman.directions["up"] == 0:
-        L.append((0, -1))
-    if pacman.directions["down"] == 0:
-        L.append((0, 1))
-    if pacman.directions["right"] == 0:
-        L.append((1, 0))
-    if pacman.directions["left"] == 0:
-        L.append((-1, 0))
-    return L
+# region PacMan Moves
 
 
-def PacManMinimalMoveToPacgum(possibleMoves):
+def PacManMinimalMoveToPacGum(possibleMoves):
     global pacman
     moveValues = {
         move: DIST_GUM[pacman.x + move[0]][pacman.y + move[1]] for move in possibleMoves
@@ -580,17 +612,25 @@ def PacManMinimalMoveToGhost(possibleMoves):
     return minimalMove
 
 
-def GhostsPossibleMove(ghost):
-    L = []
-    if ghost.directions["up"] != 1:
-        L.append((0, -1))
-    if ghost.directions["down"] != 1:
-        L.append((0, 1))
-    if ghost.directions["right"] != 1:
-        L.append((1, 0))
-    if ghost.directions["left"] != 1:
-        L.append((-1, 0))
-    return L
+# endregion
+
+
+# region Ghosts Moves
+
+
+def IsInCorridor(ghost):
+    if (ghost.directions == "up" or ghost.directions == "down") and (
+        TBL[ghost.x + 1][ghost.y] == 1 and TBL[ghost.x - 1][ghost.y] == 1
+    ):
+        return True
+    elif (ghost.directions == "left" or ghost.directions == "right") and (
+        TBL[ghost.x][ghost.y + 1] == 1 and TBL[ghost.x][ghost.y - 1] == 1
+    ):
+        return True
+    return False
+
+
+# endregion
 
 
 # endregion
@@ -629,11 +669,7 @@ def UpdateDistanceMap(inputMap, outputMap):
                 if inputMap[row][col] == 1 and TBL[row][col] != 2:
                     outputMap[row][col] = 0
                 # Vérifie si : On n'est pas sur une pacgum, un mur ou une maison
-                elif (
-                    inputMap[row][col] != 1
-                    and TBL[row][col] != 1
-                    and TBL[row][col] != 2
-                ):
+                elif inputMap[row][col] != 1 and TBL[row][col] != 1:
                     neighbors = InitializeNeighbors(row, col, outputMap)
                     if len(neighbors) != 0:
                         outputMap[row][col] = min(neighbors) + 1
