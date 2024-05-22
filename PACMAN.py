@@ -77,12 +77,12 @@ class Perso:
         }
 
     def refreshDirection(self):
-      self.directions = {
-         "up": TBL[self.x][self.y - 1],
-         "down": TBL[self.x][self.y + 1],
-         "right": TBL[self.x + 1][self.y],
-         "left": TBL[self.x - 1][self.y],
-      }
+        self.directions = {
+            "up": TBL[self.x][self.y - 1],
+            "down": TBL[self.x][self.y + 1],
+            "right": TBL[self.x + 1][self.y],
+            "left": TBL[self.x - 1][self.y],
+        }
 
 
 # endregion
@@ -100,18 +100,18 @@ class PacMan(Perso):
         self.currentMode = "recherche"
 
     def checkPacGum(self):
-      global score
-      if GUM[self.x][self.y] == 1:
-         score += 100
-         GUM[self.x][self.y] = 0
-         self.currentMode = "chasse"
+        global score
+        if GUM[self.x][self.y] == 1:
+            score += 100
+            GUM[self.x][self.y] = 0
+            self.currentMode = "chasse"
 
     def checkForModeChange(self):
-      if(self.currentMode != "chasse"):
-         if(DIST_GHOSTS[self.x][self.y] <4):
-            self.currentMode = "fuite"
-         else:
-            self.currentMode = "recherche"
+        if self.currentMode != "chasse":
+            if DIST_GHOSTS[self.x][self.y] < 4:
+                self.currentMode = "fuite"
+            else:
+                self.currentMode = "recherche"
 
 
 # endregion
@@ -138,6 +138,7 @@ class Ghost(Perso):
 #########################################################################
 #   Initialisation
 #########################################################################
+
 
 # region PacGum
 
@@ -172,6 +173,7 @@ pacman = PacMan(5, 5)
 
 # endregion
 
+
 # region Fantômes
 
 #########################################################################
@@ -191,14 +193,18 @@ def PlacementGHOSTS():
         GHOSTS[g.x][g.y] = 1
     return GHOSTS
 
-def UpdatePosGhosts(g,old_x,old_y):
+
+def UpdatePosGhosts(g, old_x, old_y):
     global GHOSTS
     GHOSTS[old_x][old_y] = 0
     GHOSTS[g.x][g.y] = 1
 
+
 GHOSTS = PlacementGHOSTS()
 
+
 # endregion
+
 
 # endregion
 
@@ -253,6 +259,7 @@ def DisplayDistInfos():
                 SetInfo1(x, y, DIST_GUM[x][y])
                 # Information Ghosts
                 SetInfo2(x, y, DIST_GHOSTS[x][y])
+
 
 # endregion
 
@@ -319,7 +326,7 @@ def AfficherPage(id):
 
 def WindowAnim():
     PlayOneTurn()
-    Window.after(333, WindowAnim)
+    Window.after(500, WindowAnim)  # Previously 333
 
 
 Window.after(100, WindowAnim)
@@ -493,33 +500,34 @@ score = 0
 
 
 def IAPacman():
-   # Utilisation PacMan gloable
-   global pacman
+    # Utilisation PacMan gloable
+    global pacman
 
     # Déplacement Pacman
-   if(pacman.currentMode == "recherche"):
-      move = PacManMinimalMoveToPacgum(PacManPossibleMove())
-   elif(pacman.currentMode == "fuite"):
-      move = PacManFleeMove(PacManPossibleMove())
-   elif(pacman.currentMode == "chasse"):
-       move = PacManMinimalMoveToGhost(PacManPossibleMove())
-   pacman.x += move[0]
-   pacman.y += move[1]
-   pacman.refreshDirection()
-   pacman.checkPacGum()
-   pacman.checkForModeChange()
-   DisplayDistInfos()
+    if pacman.currentMode == "recherche":
+        move = PacManMinimalMoveToPacgum(PacManPossibleMove())
+    elif pacman.currentMode == "fuite":
+        move = PacManFleeMove(PacManPossibleMove())
+    elif pacman.currentMode == "chasse":
+        move = PacManMinimalMoveToGhost(PacManPossibleMove())
+    pacman.x += move[0]
+    pacman.y += move[1]
+    pacman.refreshDirection()
+    pacman.checkPacGum()
+    pacman.checkForModeChange()
+    DisplayDistInfos()
+
 
 def IAGhosts():
     # Déplacement Fantome
     for F in Ghosts:
         L = GhostsPossibleMove(F)
         choix = random.randrange(len(L))
-        old_x,old_y = F.x,F.y
+        old_x, old_y = F.x, F.y
         F.x += L[choix][0]
         F.y += L[choix][1]
         F.refreshDirection()
-        UpdatePosGhosts(F,old_x,old_y)
+        UpdatePosGhosts(F, old_x, old_y)
         DisplayDistInfos()
 
 
@@ -551,18 +559,22 @@ def PacManMinimalMoveToPacgum(possibleMoves):
     minimalMove = min(moveValues, key=moveValues.get)
     return minimalMove
 
+
 def PacManFleeMove(possibleMoves):
     global pacman
     moveValues = {
-        move: DIST_GHOSTS[pacman.x + move[0]][pacman.y + move[1]] for move in possibleMoves
+        move: DIST_GHOSTS[pacman.x + move[0]][pacman.y + move[1]]
+        for move in possibleMoves
     }
     maximalMove = max(moveValues, key=moveValues.get)
     return maximalMove
 
+
 def PacManMinimalMoveToGhost(possibleMoves):
     global pacman
     moveValues = {
-        move: DIST_GHOSTS[pacman.x + move[0]][pacman.y + move[1]] for move in possibleMoves
+        move: DIST_GHOSTS[pacman.x + move[0]][pacman.y + move[1]]
+        for move in possibleMoves
     }
     minimalMove = min(moveValues, key=moveValues.get)
     return minimalMove
@@ -594,7 +606,7 @@ def InitializeDistanceMap(inputMap):
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if inputMap[x][y] == 1:
-               outputMap[x][y] = 0
+                outputMap[x][y] = 0
             # Dès lors qu'on est sur une case recherchée, on l'initialize à 0
     return outputMap
 
@@ -613,10 +625,15 @@ def UpdateDistanceMap(inputMap, outputMap):
         # On parcours le tableau pour mettre à jours les valeurs
         for row in range(rows):
             for col in range(cols):
-                if inputMap[row][col] == 1:
+                # Remet la position des fantômes à 0 sur la carte, s'il ne sont pas dans la maison
+                if inputMap[row][col] == 1 and TBL[row][col] != 2:
                     outputMap[row][col] = 0
-                # Vérifie si : On n'est pas sur une pacgum ou un fantôme, On n'est pas sur un mur
-                elif inputMap[row][col] == 0 and TBL[row][col] != 1:
+                # Vérifie si : On n'est pas sur une pacgum, un mur ou une maison
+                elif (
+                    inputMap[row][col] != 1
+                    and TBL[row][col] != 1
+                    and TBL[row][col] != 2
+                ):
                     neighbors = InitializeNeighbors(row, col, outputMap)
                     if len(neighbors) != 0:
                         outputMap[row][col] = min(neighbors) + 1
@@ -657,14 +674,16 @@ def checkCollisionPacmanGhost(pacman, ghosts):
     global GAME_OVER, LARGEUR, HAUTEUR, score
     for ghost in ghosts:
         if pacman.x == ghost.x and pacman.y == ghost.y:
-            if(pacman.currentMode == "chasse"):
-               score += 2000
-               GHOSTS[ghost.x][ghost.y] = 0
-               ghost.x, ghost.y = LARGEUR // 2, HAUTEUR // 2
+            if pacman.currentMode == "chasse":
+                score += 2000
+                GHOSTS[ghost.x][ghost.y] = 0
+                ghost.x, ghost.y = LARGEUR // 2, HAUTEUR // 2
             else:
-               GAME_OVER = True
+                GAME_OVER = True
+
 
 # endregion
+
 
 # region Worker
 
@@ -678,20 +697,20 @@ iteration = 0
 def PlayOneTurn():
     global iteration, score, pacman
 
-    if(pacman.currentMode == "chasse"):
+    if pacman.currentMode == "chasse":
         PacmanColor = "white"
     else:
         PacmanColor = "yellow"
 
     if not PAUSE_FLAG and not GAME_OVER:
-      iteration += 1
-      if iteration % 2 == 0:
-         IAPacman()
-         UpdateDistanceMap(GUM, DIST_GUM)
-      else:
-         IAGhosts()
-      checkCollisionPacmanGhost(pacman, Ghosts)
-      UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
+        iteration += 1
+        if iteration % 2 == 0:
+            IAPacman()
+            UpdateDistanceMap(GUM, DIST_GUM)
+        else:
+            IAGhosts()
+        checkCollisionPacmanGhost(pacman, Ghosts)
+        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
 
     Affiche(PacmanColor, message=f"Score : {score}")
 
