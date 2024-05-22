@@ -13,15 +13,18 @@ Ce projet a été réalisé dans le cadre du cours d'introduction à l'intellige
 
 ## Introduction
 
-Ce projet vise à implémenter une version autonome du jeu Pac-Man où l'agent Pac-Man est capable de prendre des décisions intelligentes pour éviter les fantômes et collecter tous les points dans le labyrinthe. Le projet utilise des algorithmes tels que la recherche en profondeur, la recherche en largeur, et des algorithmes de recherche informés comme A*.
+Ce projet vise à implémenter une version autonome du jeu Pac-Man où l'agent Pac-Man est capable de prendre des décisions intelligentes pour éviter les fantômes et collecter tous les points dans le labyrinthe. 
 
 ## Fonctionnalités
 
-- Mouvement autonome de Pac-Man
-- Évitement des fantômes
-- Collecte des pac gommes
-- Pourchasse les fantômes quand la super pac-gomme fait effet
-- Interface graphique pour visualiser le jeu
+- Mouvement autonome de Pac-Man: 
+   - 3 modes de déplacement : recherche, fuite et chasse
+   - mode recherche par défaut : pac-man va chercher la pac-gomme la plus proche
+   - mode fuite si un fantôme est trop proche de pac-man jusqu'à ce que qu'il soit assez loin
+   - mode chasse lorsque pac-man mange une super pac-gomme, il se met à chasser les fantômes.
+- Movement autonome des fantômes.
+- Système de scoring
+- Interface graphique pour visualiser le jeu.
 
 ## Prérequis
 
@@ -38,7 +41,7 @@ Ce projet vise à implémenter une version autonome du jeu Pac-Man où l'agent P
 
 ## Utilisation
 
-Pour lancer le jeu Pac-Man autonome, exécutez le script principal :
+Lancement du script principal :
 ```bash
 python PACMAN.py
 ```
