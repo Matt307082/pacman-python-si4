@@ -120,7 +120,9 @@ class PacMan(Perso):
         if GUM[self.x][self.y] == 1:
             score += 100
             GUM[self.x][self.y] = 0
+        if GUM[self.x][self.y] == 2:
             self.change_mode("chasse")
+            GUM[self.x][self.y] = 0
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
@@ -172,6 +174,13 @@ def PlacementsGUM():
                 random_number = random.randint(1, 10)
                 if random_number == 1:
                     GUM[x][y] = 1
+
+    # Positionnement des super pac gommes dans les 4 coins
+    GUM[1][1] = 2
+    GUM[1][HAUTEUR-2] = 2
+    GUM[LARGEUR-2][1] = 2
+    GUM[LARGEUR-2][HAUTEUR-2] = 2
+
     return GUM
 
 
@@ -399,13 +408,18 @@ def Affiche(PacmanColor, message):
                 yyy = To(y + 1)
                 canvas.create_line(xx, yy, xx, yyy, width=EPAISS, fill="blue")
 
-    # pacgum
+    # pacgum et super pacgum
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if GUM[x][y] == 1:
                 xx = To(x)
                 yy = To(y)
                 e = 5
+                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
+            elif GUM[x][y] == 2:
+                xx = To(x)
+                yy = To(y)
+                e = 7
                 canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
 
     # extra info
@@ -639,7 +653,7 @@ def InitializeDistanceMap(inputMap):
     )  # On remplie un nouveau tableau, de la forme de TBL avec la valeur 100
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
-            if inputMap[x][y] == 1:
+            if inputMap[x][y] != 0:
                 outputMap[x][y] = 0
             # Dès lors qu'on est sur une case recherchée, on l'initialize à 0
     return outputMap
@@ -660,7 +674,7 @@ def UpdateDistanceMap(inputMap, outputMap):
         for row in range(rows):
             for col in range(cols):
                 # Remet la position des fantômes à 0 sur la carte, s'il ne sont pas dans la maison
-                if inputMap[row][col] == 1 and TBL[row][col] != 2:
+                if inputMap[row][col] != 0 and TBL[row][col] != 2:
                     outputMap[row][col] = 0
                 # Vérifie si : On n'est pas sur une pacgum, un mur ou une maison
                 elif inputMap[row][col] != 1 and TBL[row][col] != 1:
@@ -738,7 +752,7 @@ def PlayOneTurn():
 
         if pacman.currentMode == "chasse":
             tour_mode_chasseur += 1
-            if(tour_mode_chasseur == 15):
+            if(tour_mode_chasseur == 25):
                 pacman.change_mode("recherche")
                 tour_mode_chasseur = 0
 
