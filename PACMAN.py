@@ -1,6 +1,6 @@
 # region Imports
 
-import random, time
+import random
 import tkinter as tk
 from tkinter import font as tkfont
 import numpy as np
@@ -84,6 +84,18 @@ class Perso:
             "left": TBL[self.x - 1][self.y],
         }
 
+    def GetPossibleMoves(self):
+        L = []
+        if self.directions["up"] == 0:
+            L.append((0, -1))
+        if self.directions["down"] == 0:
+            L.append((0, 1))
+        if self.directions["right"] == 0:
+            L.append((1, 0))
+        if self.directions["left"] == 0:
+            L.append((-1, 0))
+        return L
+
 
 # endregion
 
@@ -105,13 +117,10 @@ class PacMan(Perso):
 
     def CheckPacGum(self):
         global score
-        timer = -1
         if GUM[self.x][self.y] == 1:
             score += 100
             GUM[self.x][self.y] = 0
             self.change_mode("chasse")
-            timer = time.time()
-        return timer
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
@@ -119,18 +128,6 @@ class PacMan(Perso):
                 self.change_mode("fuite")
             else:
                 self.change_mode("recherche")
-
-    def GetPossibleMoves(self):
-        L = []
-        if self.directions["up"] == 0:
-            L.append((0, -1))
-        if self.directions["down"] == 0:
-            L.append((0, 1))
-        if self.directions["right"] == 0:
-            L.append((1, 0))
-        if self.directions["left"] == 0:
-            L.append((-1, 0))
-        return L
 
 
 # endregion
@@ -145,18 +142,6 @@ class Ghost(Perso):
     def __init__(self, x, y, color):
         Perso.__init__(self, x, y)
         self.color = color
-
-    def GetPossibleMoves(self):
-        L = []
-        if self.directions["up"] != 1:
-            L.append((0, -1))
-        if self.directions["down"] != 1:
-            L.append((0, 1))
-        if self.directions["right"] != 1:
-            L.append((1, 0))
-        if self.directions["left"] != 1:
-            L.append((-1, 0))
-        return L
 
 
 # endregion
@@ -545,11 +530,10 @@ def IAPacman():
     pacman.y += move[1]
 
     pacman.RefreshDirection()
-    timer = pacman.CheckPacGum()
+    pacman.CheckPacGum()
     pacman.CheckForModeChange()
 
     DisplayDistInfos()
-    return timer
 
 
 def IAGhosts():
