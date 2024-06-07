@@ -126,7 +126,7 @@ class PacMan(Perso):
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
-            if DIST_GHOSTS[self.x][self.y] < 4:
+            if DIST_GHOSTS[self.x][self.y] <= 4:
                 self.change_mode("fuite")
             else:
                 self.change_mode("recherche")
@@ -171,7 +171,7 @@ def PlacementsGUM():
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
-                random_number = random.randint(1, 10)
+                random_number = random.randint(1, 1)
                 if random_number == 1:
                     GUM[x][y] = 1
 
@@ -579,6 +579,7 @@ def IAGhosts():
 
         F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
+        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         DisplayDistInfos()
 
 
@@ -762,7 +763,6 @@ def PlayOneTurn():
         else:
             IAGhosts()
         checkCollisionPacmanGhost(pacman, Ghosts)
-        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
 
     Affiche(PacmanColor, message=f"Score : {score}")
 
