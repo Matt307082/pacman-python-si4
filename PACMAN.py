@@ -86,14 +86,14 @@ class Perso:
 
     def GetPossibleMoves(self):
         L = []
-        if self.directions["up"] == 0:
-            L.append((0, -1))
         if self.directions["down"] == 0:
             L.append((0, 1))
-        if self.directions["right"] == 0:
-            L.append((1, 0))
         if self.directions["left"] == 0:
             L.append((-1, 0))
+        if self.directions["right"] == 0:
+            L.append((1, 0))
+        if self.directions["up"] == 0:
+            L.append((0, -1))
         return L
 
 
@@ -126,7 +126,7 @@ class PacMan(Perso):
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
-            if DIST_GHOSTS[self.x][self.y] <= 4:
+            if DIST_GHOSTS[self.x][self.y] < 4:
                 self.change_mode("fuite")
             else:
                 self.change_mode("recherche")
@@ -171,8 +171,6 @@ def PlacementsGUM():
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
-                random_number = random.randint(1, 1)
-                if random_number == 1:
                     GUM[x][y] = 1
 
     # Positionnement des super pac gommes dans les 4 coins
@@ -351,7 +349,7 @@ def AfficherPage(id):
 
 def WindowAnim():
     PlayOneTurn()
-    Window.after(333, WindowAnim)  # Previously 333
+    Window.after(333, WindowAnim)
 
 
 Window.after(100, WindowAnim)
@@ -580,6 +578,8 @@ def IAGhosts():
         F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
+        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
+        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         DisplayDistInfos()
 
 
@@ -759,6 +759,8 @@ def PlayOneTurn():
 
         if iteration % 2 == 0:
             IAPacman()
+            UpdateDistanceMap(GUM, DIST_GUM)
+            UpdateDistanceMap(GUM, DIST_GUM)
             UpdateDistanceMap(GUM, DIST_GUM)
         else:
             IAGhosts()
