@@ -110,6 +110,8 @@ class PacMan(Perso):
         Perso.__init__(self, x, y)
         self.modes = ["recherche", "fuite", "chasse"]
         self.currentMode = "recherche"
+        self.tempo = False
+        self.moveToSuperPacGum = (0,0)
 
     def change_mode(self, newMode):
         if newMode in self.modes:
@@ -126,10 +128,24 @@ class PacMan(Perso):
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
-            if DIST_GHOSTS[self.x][self.y] <= 4:
+            if DIST_GHOSTS[self.x][self.y] < 4:
                 self.change_mode("fuite")
             else:
                 self.change_mode("recherche")
+
+    def CheckForEndTempo(self):
+        if(self.tempo):
+            if (DIST_GHOSTS[self.x][self.y] < 3):
+                self.tempo = False
+                return True
+        return False
+    
+    def CheckForEnterTempo(self, move):
+        if(GUM[self.x + move[0]][self.y + move[1]] == 2):
+            self.tempo = True
+            self.moveToSuperPacGum = move
+            return True
+        return False
 
 
 # endregion
@@ -419,7 +435,7 @@ def Affiche(PacmanColor, message):
                 xx = To(x)
                 yy = To(y)
                 e = 7
-                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="orange")
+                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="white")
 
     # extra info
     for x in range(LARGEUR):
@@ -502,6 +518,14 @@ def Affiche(PacmanColor, message):
             fill="yellow",
             font=PoliceTexte,
         )
+    if WIN:
+        canvas.create_text(
+            screeenWidth // 2,
+            screenHeight // 2,
+            text="YOU WIN",
+            fill="yellow",
+            font=PoliceTexte,
+        )
 
 
 AfficherPage(0)
@@ -519,6 +543,7 @@ AfficherPage(0)
 # region Variables globales
 
 GAME_OVER = False
+WIN = False
 
 score = 0
 
@@ -532,19 +557,27 @@ def IAPacman():
     # Utilisation PacMan globale
     global pacman
 
-    # Déplacement Pacman
-    if pacman.currentMode == "recherche":
-        move = PacManMinimalMoveToPacGum(pacman.GetPossibleMoves())
-    elif pacman.currentMode == "fuite":
-        move = PacManFleeMove(pacman.GetPossibleMoves())
-    elif pacman.currentMode == "chasse":
-        move = PacManMinimalMoveToGhost(pacman.GetPossibleMoves())
-    pacman.x += move[0]
-    pacman.y += move[1]
+    endtempo = pacman.CheckForEndTempo()
+    if(not pacman.tempo):
+        pacman.RefreshDirection()
 
-    pacman.RefreshDirection()
-    pacman.CheckPacGum()
-    pacman.CheckForModeChange()
+        # Déplacement Pacman
+        if pacman.currentMode == "recherche":
+            move = PacManMinimalMoveToPacGum(pacman.GetPossibleMoves())
+        elif pacman.currentMode == "fuite":
+            move = PacManFleeMove(pacman.GetPossibleMoves())
+        elif pacman.currentMode == "chasse":
+            move = PacManMinimalMoveToGhost(pacman.GetPossibleMoves())
+
+        if(endtempo):
+                pacman.x += pacman.moveToSuperPacGum[0]
+                pacman.y += pacman.moveToSuperPacGum[1]
+        elif(not pacman.CheckForEnterTempo(move)):
+                pacman.x += move[0]
+                pacman.y += move[1]
+
+        pacman.CheckPacGum()
+        pacman.CheckForModeChange()
 
     DisplayDistInfos()
 
@@ -555,6 +588,7 @@ def IAGhosts():
 
     # Déplacement Fantome
     for F in Ghosts:
+        F.RefreshDirection()
         old_x, old_y = F.x, F.y
 
         if TBL[F.x][F.y] == 2:
@@ -581,7 +615,6 @@ def IAGhosts():
             F.y += move[1]
             F.lastDirection = GetLastDirection(move)
 
-        F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         DisplayDistInfos()
@@ -759,7 +792,7 @@ def PlayOneTurn():
     else:
         PacmanColor = "yellow"
 
-    if not PAUSE_FLAG and not GAME_OVER:
+    if not PAUSE_FLAG and not GAME_OVER and not WIN:
         iteration += 1
 
         if pacman.currentMode == "chasse":
