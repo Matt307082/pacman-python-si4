@@ -88,10 +88,10 @@ class Perso:
         L = []
         if self.directions["down"] == 0:
             L.append((0, 1))
-        if self.directions["left"] == 0:
-            L.append((-1, 0))
         if self.directions["right"] == 0:
             L.append((1, 0))
+        if self.directions["left"] == 0:
+            L.append((-1, 0))
         if self.directions["up"] == 0:
             L.append((0, -1))
         return L
@@ -577,6 +577,7 @@ def IAGhosts():
 
         F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
+        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
