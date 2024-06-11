@@ -112,8 +112,8 @@ class PacMan(Perso):
         self.currentMode = "recherche"
 
     def change_mode(self, newMode):
-      if(newMode in self.modes):
-         self.currentMode = newMode
+        if newMode in self.modes:
+            self.currentMode = newMode
 
     def CheckPacGum(self):
         global score
@@ -144,6 +144,7 @@ class Ghost(Perso):
     def __init__(self, x, y, color):
         Perso.__init__(self, x, y)
         self.color = color
+        self.lastDirection = "up"
 
 
 # endregion
@@ -171,13 +172,13 @@ def PlacementsGUM():
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
-                    GUM[x][y] = 1
+                GUM[x][y] = 1
 
     # Positionnement des super pac gommes dans les 4 coins
     GUM[1][1] = 2
-    GUM[1][HAUTEUR-2] = 2
-    GUM[LARGEUR-2][1] = 2
-    GUM[LARGEUR-2][HAUTEUR-2] = 2
+    GUM[1][HAUTEUR - 2] = 2
+    GUM[LARGEUR - 2][1] = 2
+    GUM[LARGEUR - 2][HAUTEUR - 2] = 2
 
     return GUM
 
@@ -560,13 +561,13 @@ def IAGhosts():
             F.y -= 1
 
         elif IsInCorridor(F):
-            if F.direction == "up":
+            if F.lastDirection == "up":
                 F.y -= 1
-            elif F.direction == "down":
+            elif F.lastDirection == "down":
                 F.y += 1
-            elif F.direction == "left":
+            elif F.lastDirection == "left":
                 F.x -= 1
-            elif F.direction == "right":
+            elif F.lastDirection == "right":
                 F.x += 1
 
         else:
@@ -574,12 +575,10 @@ def IAGhosts():
             move = L[random.randint(0, len(L) - 1)]
             F.x += move[0]
             F.y += move[1]
+            F.lastDirection = GetLastDirection(move)
 
         F.RefreshDirection()
         UpdatePosGhosts(F, old_x, old_y)
-        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
-        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
-        UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         DisplayDistInfos()
 
@@ -629,15 +628,21 @@ def PacManMinimalMoveToGhost(possibleMoves):
 
 
 def IsInCorridor(ghost):
-    if (ghost.directions == "up" or ghost.directions == "down") and (
-        TBL[ghost.x + 1][ghost.y] == 1 and TBL[ghost.x - 1][ghost.y] == 1
-    ):
+    if TBL[ghost.x + 1][ghost.y] == 1 and TBL[ghost.x - 1][ghost.y] == 1:
         return True
-    elif (ghost.directions == "left" or ghost.directions == "right") and (
-        TBL[ghost.x][ghost.y + 1] == 1 and TBL[ghost.x][ghost.y - 1] == 1
-    ):
+    elif TBL[ghost.x][ghost.y + 1] == 1 and TBL[ghost.x][ghost.y - 1] == 1:
         return True
     return False
+
+
+def GetLastDirection(move):
+    if move == (1, 0):
+        return "right"
+    elif move == (0, 1):
+        return "down"
+    elif move == (-1, 0):
+        return "left"
+    return "up"
 
 
 # endregion
@@ -663,6 +668,7 @@ def InitializeDistanceMap(inputMap):
 
 DIST_GUM = InitializeDistanceMap(GUM)
 DIST_GHOSTS = InitializeDistanceMap(GHOSTS)
+# DIST_HOUSE = Initialize
 
 
 def UpdateDistanceMap(inputMap, outputMap):
@@ -670,7 +676,7 @@ def UpdateDistanceMap(inputMap, outputMap):
     hasBeenModified = True
     while hasBeenModified:
         # On garde une copie pour la comparer après
-        oldOutputMap = outputMap
+        oldOutputMap = outputMap.copy()
 
         # On parcours le tableau pour mettre à jours les valeurs
         for row in range(rows):
@@ -742,7 +748,7 @@ tour_mode_chasseur = 0
 
 
 def PlayOneTurn():
-    global iteration,tour_mode_chasseur, score, pacman
+    global iteration, tour_mode_chasseur, score, pacman
 
     if pacman.currentMode == "chasse":
         PacmanColor = "white"
@@ -754,14 +760,12 @@ def PlayOneTurn():
 
         if pacman.currentMode == "chasse":
             tour_mode_chasseur += 1
-            if(tour_mode_chasseur == 25):
+            if tour_mode_chasseur == 25:
                 pacman.change_mode("recherche")
                 tour_mode_chasseur = 0
 
         if iteration % 2 == 0:
             IAPacman()
-            UpdateDistanceMap(GUM, DIST_GUM)
-            UpdateDistanceMap(GUM, DIST_GUM)
             UpdateDistanceMap(GUM, DIST_GUM)
         else:
             IAGhosts()
