@@ -560,7 +560,7 @@ def IAGhosts():
         if TBL[F.x][F.y] == 2:
             p_sortir = random.randint(1,10)
             if(p_sortir == 1):
-                F.y -= 1
+                F.y -= 2
             else :
                 continue
 
