@@ -126,7 +126,7 @@ class PacMan(Perso):
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
-            if DIST_GHOSTS[self.x][self.y] < 4:
+            if DIST_GHOSTS[self.x][self.y] <= 4:
                 self.change_mode("fuite")
             else:
                 self.change_mode("recherche")
@@ -558,7 +558,11 @@ def IAGhosts():
         old_x, old_y = F.x, F.y
 
         if TBL[F.x][F.y] == 2:
-            F.y -= 1
+            p_sortir = random.randint(1,10)
+            if(p_sortir == 1):
+                F.y -= 1
+            else :
+                continue
 
         elif IsInCorridor(F):
             if F.lastDirection == "up":
@@ -635,7 +639,7 @@ def IsInCorridor(ghost):
     return False
 
 
-def GetLastDirection(move):  # coucou
+def GetLastDirection(move): 
     if move == (1, 0):
         return "right"
     elif move == (0, 1):
