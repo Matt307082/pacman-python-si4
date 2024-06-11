@@ -635,7 +635,7 @@ def IsInCorridor(ghost):
     return False
 
 
-def GetLastDirection(move):
+def GetLastDirection(move):  # coucou
     if move == (1, 0):
         return "right"
     elif move == (0, 1):
