@@ -125,15 +125,17 @@ class PacMan(Perso):
             self.currentMode = newMode
 
     def CheckPacGum(self):
-        global SCORE, NB_PACGUM
+        global SCORE, BONUS_ACTIVE
         if GUM[self.x][self.y] == 1:
             SCORE += 100
             GUM[self.x][self.y] = 0
-            NB_PACGUM -= 1
-        if GUM[self.x][self.y] == 2:
+        elif GUM[self.x][self.y] == 2:
             self.change_mode("chasse")
             GUM[self.x][self.y] = 0
-            NB_PACGUM -= 1
+        elif GUM[self.x][self.y] == 3:
+            SCORE += 500
+            GUM[self.x][self.y] = 0
+            BONUS_ACTIVE = False
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
@@ -190,25 +192,19 @@ class Ghost(Perso):
 #   Initialisation et placement des PacGum
 #########################################################################
 
-
-NB_PACGUM = 0
-
 def PlacementsGUM():
-    global NB_PACGUM
     GUM = np.zeros(TBL.shape, dtype=np.int32)
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
                 GUM[x][y] = 1
-                NB_PACGUM += 1
 
     # Positionnement des super pac gommes dans les 4 coins
     GUM[1][1] = 2
     GUM[1][HAUTEUR - 2] = 2
     GUM[LARGEUR - 2][1] = 2
     GUM[LARGEUR - 2][HAUTEUR - 2] = 2
-    NB_PACGUM += 4
 
     return GUM
 
@@ -450,6 +446,11 @@ def Affiche(PacmanColor, message):
                 yy = To(y)
                 e = 7
                 canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="white")
+            elif GUM[x][y] == 3:
+                xx = To(x)
+                yy = To(y)
+                e = 7
+                canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill="red")
 
     # extra info
     for x in range(LARGEUR):
@@ -560,6 +561,7 @@ GAME_OVER = False
 WIN = False
 
 SCORE = 0
+BONUS_ACTIVE = False
 
 # endregion
 
@@ -784,6 +786,18 @@ def HasBeenModified(firstMap, secondMap):
 
 # endregion
 
+# region Activators
+
+def ActivateBonus():
+    global BONUS_ACTIVE
+    x=0
+    y=0
+    while(GUM[x][y] != 1):
+        x = random.randint(1,len(TBL)-1)
+        y = random.randint(1,len(TBL[0])-1)
+    GUM[x][y] = 3
+    BONUS_ACTIVE = True
+
 
 # region Checkers
 
@@ -799,11 +813,6 @@ def checkCollisionPacmanGhost(pacman, ghosts):
             else:
                 GAME_OVER = True
 
-def checkWin():
-    global WIN, NB_PACGUM
-    if(NB_PACGUM == 0):
-        WIN = True   
-
 
 # endregion
 
@@ -816,10 +825,11 @@ def checkWin():
 
 iteration = 0
 tour_mode_chasseur = 0
+cooldown_bonus = 11
 
 
 def PlayOneTurn():
-    global iteration, tour_mode_chasseur, SCORE, pacman
+    global iteration, tour_mode_chasseur, cooldown_bonus, SCORE, BONUS_ACTIVE, pacman
 
     if pacman.currentMode == "chasse":
         PacmanColor = "white"
@@ -828,6 +838,14 @@ def PlayOneTurn():
 
     if not PAUSE_FLAG and not GAME_OVER and not WIN:
         iteration += 1
+
+        if(not BONUS_ACTIVE and cooldown_bonus > 20):
+            ActivateBonus()
+        elif(not BONUS_ACTIVE and cooldown_bonus <= 20):
+            cooldown_bonus += 1
+        else:
+            cooldown_bonus = 0
+
 
         if pacman.currentMode == "chasse":
             tour_mode_chasseur += 1
@@ -838,7 +856,6 @@ def PlayOneTurn():
         if iteration % 2 == 0:
             IAPacman()
             UpdateDistanceMap(GUM, DIST_GUM)
-            checkWin()
         else:
             IAGhosts()
         checkCollisionPacmanGhost(pacman, Ghosts)
