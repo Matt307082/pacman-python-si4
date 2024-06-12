@@ -40,7 +40,7 @@ TBL = CreateArray(
         [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
         [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 1, 0, 1, 1, 0, 1, 1, 2, 2, 1, 1, 0, 1, 1, 0, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 1],
+        [4, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 4],
         [1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
         [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
@@ -88,13 +88,20 @@ class Perso:
         L = []
         if self.directions["down"] == 0:
             L.append((0, 1))
-        if self.directions["right"] == 0:
+        if self.directions["right"] == 0 or self.directions["right"] == 4:
             L.append((1, 0))
-        if self.directions["left"] == 0:
+        if self.directions["left"] == 0 or self.directions["left"] == 4:
             L.append((-1, 0))
         if self.directions["up"] == 0:
             L.append((0, -1))
         return L
+    
+    def CheckTunnel(self):
+        if(TBL[self.x][self.y] == 4):
+            if(self.x == 0):
+                self.x = len(TBL)-2
+            else:
+                self.x = 1
 
 
 # endregion
@@ -118,13 +125,15 @@ class PacMan(Perso):
             self.currentMode = newMode
 
     def CheckPacGum(self):
-        global score
+        global SCORE, NB_PACGUM
         if GUM[self.x][self.y] == 1:
-            score += 100
+            SCORE += 100
             GUM[self.x][self.y] = 0
+            NB_PACGUM -= 1
         if GUM[self.x][self.y] == 2:
             self.change_mode("chasse")
             GUM[self.x][self.y] = 0
+            NB_PACGUM -= 1
 
     def CheckForModeChange(self):
         if self.currentMode != "chasse":
@@ -182,19 +191,24 @@ class Ghost(Perso):
 #########################################################################
 
 
+NB_PACGUM = 0
+
 def PlacementsGUM():
+    global NB_PACGUM
     GUM = np.zeros(TBL.shape, dtype=np.int32)
 
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
             if TBL[x][y] == 0:
                 GUM[x][y] = 1
+                NB_PACGUM += 1
 
     # Positionnement des super pac gommes dans les 4 coins
     GUM[1][1] = 2
     GUM[1][HAUTEUR - 2] = 2
     GUM[LARGEUR - 2][1] = 2
     GUM[LARGEUR - 2][HAUTEUR - 2] = 2
+    NB_PACGUM += 4
 
     return GUM
 
@@ -294,7 +308,7 @@ def DisplayDistInfos():
     # Utilisation SetInfo
     for x in range(LARGEUR):
         for y in range(HAUTEUR):
-            if TBL[x][y] == 0:
+            if TBL[x][y] == 0 or TBL[x][y] == 4:
                 # Information PacGum
                 SetInfo1(x, y, DIST_GUM[x][y])
                 # Information Ghosts
@@ -545,7 +559,7 @@ AfficherPage(0)
 GAME_OVER = False
 WIN = False
 
-score = 0
+SCORE = 0
 
 # endregion
 
@@ -576,6 +590,7 @@ def IAPacman():
                 pacman.x += move[0]
                 pacman.y += move[1]
 
+        pacman.CheckTunnel()
         pacman.CheckPacGum()
         pacman.CheckForModeChange()
 
@@ -615,6 +630,7 @@ def IAGhosts():
             F.y += move[1]
             F.lastDirection = GetLastDirection(move)
 
+        F.CheckTunnel()
         UpdatePosGhosts(F, old_x, old_y)
         UpdateDistanceMap(GHOSTS, DIST_GHOSTS)
         DisplayDistInfos()
@@ -721,11 +737,24 @@ def UpdateDistanceMap(inputMap, outputMap):
                 # Remet la position des fantômes à 0 sur la carte, s'il ne sont pas dans la maison
                 if inputMap[row][col] != 0 and TBL[row][col] != 2:
                     outputMap[row][col] = 0
+
                 # Vérifie si : On n'est pas sur une pacgum, un mur ou une maison
-                elif inputMap[row][col] != 1 and TBL[row][col] != 1:
+                elif inputMap[row][col] != 1 and TBL[row][col] != 1 and TBL[row][col] != 4:
                     neighbors = InitializeNeighbors(row, col, outputMap)
                     if len(neighbors) != 0:
                         outputMap[row][col] = min(neighbors) + 1
+
+                # Modification des distances en prenant en compte le tunnel
+                if row == 0:
+                    if(TBL[row][col] == 4):
+                        outputMap[row+1][col] = min(outputMap[row+1][col],outputMap[rows-1][col])
+                        outputMap[row][col] = outputMap[row+1][col]
+                        outputMap[rows-1][col] = outputMap[row][col]
+                if row+1 == rows:
+                    if(TBL[row+1][col] == 4):
+                        outputMap[row][col] = min(outputMap[1][col]+1,outputMap[row][col])
+                        outputMap[row+1][col] = outputMap[row][col]
+                        outputMap[0][col] = outputMap[row][col]
 
         # On test si on a modifié la carte (bug possible)
         hasBeenModified = HasBeenModified(outputMap, oldOutputMap)
@@ -760,15 +789,20 @@ def HasBeenModified(firstMap, secondMap):
 
 
 def checkCollisionPacmanGhost(pacman, ghosts):
-    global GAME_OVER, LARGEUR, HAUTEUR, score
+    global GAME_OVER, LARGEUR, HAUTEUR, SCORE
     for ghost in ghosts:
         if pacman.x == ghost.x and pacman.y == ghost.y:
             if pacman.currentMode == "chasse":
-                score += 2000
+                SCORE += 2000
                 GHOSTS[ghost.x][ghost.y] = 0
                 ghost.x, ghost.y = LARGEUR // 2, HAUTEUR // 2
             else:
                 GAME_OVER = True
+
+def checkWin():
+    global WIN, NB_PACGUM
+    if(NB_PACGUM == 0):
+        WIN = True   
 
 
 # endregion
@@ -785,7 +819,7 @@ tour_mode_chasseur = 0
 
 
 def PlayOneTurn():
-    global iteration, tour_mode_chasseur, score, pacman
+    global iteration, tour_mode_chasseur, SCORE, pacman
 
     if pacman.currentMode == "chasse":
         PacmanColor = "white"
@@ -804,11 +838,12 @@ def PlayOneTurn():
         if iteration % 2 == 0:
             IAPacman()
             UpdateDistanceMap(GUM, DIST_GUM)
+            checkWin()
         else:
             IAGhosts()
         checkCollisionPacmanGhost(pacman, Ghosts)
 
-    Affiche(PacmanColor, message=f"Score : {score}")
+    Affiche(PacmanColor, message=f"SCORE : {SCORE}")
 
 
 # endregion
