@@ -24,6 +24,7 @@ import numpy as np
 # 0 : Vide
 # 1 : Mur
 # 2 : Maison des fantomes, ils peuvent circuler mais pas pacman
+# 3 : respawn des fantômes
 
 
 # Transforme une liste de liste Python en TBL numpy équivalent à un tableau 2D en C
@@ -40,7 +41,7 @@ TBL = CreateArray(
         [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
         [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 1, 0, 1, 1, 0, 1, 1, 2, 2, 1, 1, 0, 1, 1, 0, 1, 0, 1],
-        [4, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 4],
+        [4, 0, 0, 0, 0, 0, 0, 1, 2, 3, 3, 2, 1, 0, 0, 0, 0, 0, 0, 4],
         [1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
         [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
         [1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1],
@@ -86,7 +87,7 @@ class Perso:
 
     def GetPossibleMoves(self):
         L = []
-        if self.directions["down"] == 0:
+        if self.directions["down"] == 0 or (self.directions["down"] != 1 and self.__class__.__name__ == "Ghost" and not self.isAlive):
             L.append((0, 1))
         if self.directions["right"] == 0 or self.directions["right"] == 4:
             L.append((1, 0))
@@ -119,6 +120,7 @@ class PacMan(Perso):
         self.currentMode = "recherche"
         self.tempo = False
         self.moveToSuperPacGum = (0,0)
+        self.direction = (0, 0)
 
     def change_mode(self, newMode):
         if newMode in self.modes:
@@ -171,7 +173,14 @@ class Ghost(Perso):
     def __init__(self, x, y, color):
         Perso.__init__(self, x, y)
         self.color = color
-        self.lastDirection = "up"
+        self.lastDirection = (0,-1)
+        self.oppositeDirection = (0,1)
+        self.isAlive = True
+
+    def resetGhost(self):
+        self.lastDirection = (0,-1)
+        self.oppositeDirection = (0,1)
+        self.isAlive = True
 
 
 # endregion
@@ -231,10 +240,10 @@ pacman = PacMan(5, 5)
 #########################################################################
 
 Ghosts = []
-Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "pink"))
-Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "orange"))
-Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "cyan"))
-Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2, "red"))
+Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2 +1, "pink"))
+Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2 +1, "orange"))
+Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2 +1, "cyan"))
+Ghosts.append(Ghost(LARGEUR // 2, HAUTEUR // 2 +1, "red"))
 
 
 def PlacementGHOSTS():
@@ -246,14 +255,33 @@ def PlacementGHOSTS():
 
 def UpdatePosGhosts(g, old_x, old_y):
     global GHOSTS
-    GHOSTS[old_x][old_y] = 0
-    GHOSTS[g.x][g.y] = 1
+    if g.isAlive:
+        GHOSTS[old_x][old_y] = 0
+        GHOSTS[g.x][g.y] = 1
 
 
 GHOSTS = PlacementGHOSTS()
 
 
 # endregion
+
+# region Maison des Fantômes
+
+#########################################################################
+#   Initialisation de la carte de la maison
+#########################################################################
+
+def PlacementRESPAWN():
+    RESPAWN = np.zeros(TBL.shape, dtype=np.int32)
+
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            if TBL[x][y] == 2:
+                RESPAWN[x][y] = 1
+    return RESPAWN
+
+
+RESPAWN = PlacementRESPAWN()
 
 
 # endregion
@@ -475,10 +503,27 @@ def Affiche(PacmanColor, message):
     anim_bouche = (anim_bouche + 1) % len(animPacman)
     ouv_bouche = animPacman[anim_bouche]
     tour = 360 - 2 * ouv_bouche
-    canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill=PacmanColor)
-    canvas.create_polygon(
-        xx, yy, xx + e, yy + ouv_bouche, xx + e, yy - ouv_bouche, fill="black"
-    )  # bouche
+
+    if pacman.direction == (1, 0):  # droite
+        canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill=PacmanColor)
+        canvas.create_polygon(
+            xx, yy, xx + e, yy + ouv_bouche, xx + e, yy - ouv_bouche, fill="black"
+        )
+    elif pacman.direction == (-1, 0):  # gauche
+        canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill=PacmanColor)
+        canvas.create_polygon(
+            xx, yy, xx - e, yy + ouv_bouche, xx - e, yy - ouv_bouche, fill="black"
+        )
+    elif pacman.direction == (0, 1):  # bas
+        canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill=PacmanColor)
+        canvas.create_polygon(
+            xx, yy, xx + ouv_bouche, yy + e, xx - ouv_bouche, yy + e, fill="black"
+        )
+    elif pacman.direction == (0, -1):  # haut
+        canvas.create_oval(xx - e, yy - e, xx + e, yy + e, fill=PacmanColor)
+        canvas.create_polygon(
+            xx, yy, xx + ouv_bouche, yy - e, xx - ouv_bouche, yy - e, fill="black"
+        )
 
     # dessine les fantomes
     dec = -3
@@ -487,17 +532,18 @@ def Affiche(PacmanColor, message):
         yy = To(P.y)
         e = 16
 
-        coul = P.color
-        # corps du fantome
-        CreateCircle(dec + xx, dec + yy - e + 6, e, coul)
-        canvas.create_rectangle(
-            dec + xx - e,
-            dec + yy - e,
-            dec + xx + e + 1,
-            dec + yy + e,
-            fill=coul,
-            width=0,
-        )
+        if(P.isAlive):
+            coul = P.color
+            # corps du fantome
+            CreateCircle(dec + xx, dec + yy - e + 6, e, coul)
+            canvas.create_rectangle(
+                dec + xx - e,
+                dec + yy - e,
+                dec + xx + e + 1,
+                dec + yy + e,
+                fill=coul,
+                width=0,
+            )
 
         # oeil gauche
         CreateCircle(dec + xx - 7, dec + yy - 8, 5, "white")
@@ -588,9 +634,11 @@ def IAPacman():
         if(endtempo):
                 pacman.x += pacman.moveToSuperPacGum[0]
                 pacman.y += pacman.moveToSuperPacGum[1]
+                pacman.direction = pacman.moveToSuperPacGum
         elif(not pacman.CheckForEnterTempo(move)):
                 pacman.x += move[0]
                 pacman.y += move[1]
+                pacman.direction = move
 
         pacman.CheckTunnel()
         pacman.CheckPacGum()
@@ -608,29 +656,39 @@ def IAGhosts():
         F.RefreshDirection()
         old_x, old_y = F.x, F.y
 
-        if TBL[F.x][F.y] == 2:
+        if TBL[F.x][F.y] == 3:
+            F.resetGhost()
             p_sortir = random.randint(1,10)
             if(p_sortir == 1):
-                F.y -= 2
+                F.y -= 1
             else :
                 continue
 
-        elif IsInCorridor(F):
-            if F.lastDirection == "up":
-                F.y -= 1
-            elif F.lastDirection == "down":
-                F.y += 1
-            elif F.lastDirection == "left":
-                F.x -= 1
-            elif F.lastDirection == "right":
-                F.x += 1
+        elif F.isAlive:
+            if IsInCorridor(F):
+                if F.lastDirection == (0, -1):
+                    F.y -= 1
+                elif F.lastDirection == (0, 1):
+                    F.y += 1
+                elif F.lastDirection == (-1, 0):
+                    F.x -= 1
+                elif F.lastDirection == (1, 0):
+                    F.x += 1
 
+            else:
+                L = F.GetPossibleMoves()
+                move = L[random.randint(0, len(L) - 1)]
+                while(move == F.oppositeDirection):
+                    move = L[random.randint(0, len(L) - 1)]
+                F.x += move[0]
+                F.y += move[1]
+                F.lastDirection = move
+                F.oppositeDirection = (-1* move[0], -1* move[1])
         else:
             L = F.GetPossibleMoves()
-            move = L[random.randint(0, len(L) - 1)]
+            move = GetBestMovetoRespawn(F,L)
             F.x += move[0]
             F.y += move[1]
-            F.lastDirection = GetLastDirection(move)
 
         F.CheckTunnel()
         UpdatePosGhosts(F, old_x, old_y)
@@ -665,7 +723,6 @@ def PacManFleeMove(possibleMoves):
     maximalMove = max(moveValues, key=moveValues.get)
     return maximalMove
 
-
 def PacManMinimalMoveToGhost(possibleMoves):
     global pacman
     moveValues = {
@@ -675,6 +732,13 @@ def PacManMinimalMoveToGhost(possibleMoves):
     minimalMove = min(moveValues, key=moveValues.get)
     return minimalMove
 
+def GetBestMovetoRespawn(ghost, possibleMoves):
+    moveValues = {
+        move: DIST_RESPAWN[ghost.x + move[0]][ghost.y + move[1]]
+        for move in possibleMoves
+    }
+    minimalMove = min(moveValues, key=moveValues.get)
+    return minimalMove
 
 # endregion
 
@@ -688,16 +752,6 @@ def IsInCorridor(ghost):
     elif TBL[ghost.x][ghost.y + 1] == 1 and TBL[ghost.x][ghost.y - 1] == 1:
         return True
     return False
-
-
-def GetLastDirection(move): 
-    if move == (1, 0):
-        return "right"
-    elif move == (0, 1):
-        return "down"
-    elif move == (-1, 0):
-        return "left"
-    return "up"
 
 
 # endregion
@@ -723,7 +777,7 @@ def InitializeDistanceMap(inputMap):
 
 DIST_GUM = InitializeDistanceMap(GUM)
 DIST_GHOSTS = InitializeDistanceMap(GHOSTS)
-# DIST_HOUSE = Initialize
+DIST_RESPAWN = InitializeDistanceMap(RESPAWN)
 
 
 def UpdateDistanceMap(inputMap, outputMap):
@@ -737,7 +791,7 @@ def UpdateDistanceMap(inputMap, outputMap):
         for row in range(rows):
             for col in range(cols):
                 # Remet la position des fantômes à 0 sur la carte, s'il ne sont pas dans la maison
-                if inputMap[row][col] != 0 and TBL[row][col] != 2:
+                if inputMap[row][col] != 0 and TBL[row][col] != 2 and TBL[row][col] != 3:
                     outputMap[row][col] = 0
 
                 # Vérifie si : On n'est pas sur une pacgum, un mur ou une maison
@@ -805,14 +859,23 @@ def ActivateBonus():
 def checkCollisionPacmanGhost(pacman, ghosts):
     global GAME_OVER, LARGEUR, HAUTEUR, SCORE
     for ghost in ghosts:
-        if pacman.x == ghost.x and pacman.y == ghost.y:
-            if pacman.currentMode == "chasse":
-                SCORE += 2000
-                GHOSTS[ghost.x][ghost.y] = 0
-                ghost.x, ghost.y = LARGEUR // 2, HAUTEUR // 2
-            else:
-                GAME_OVER = True
+        if ghost.isAlive:
+            if pacman.x == ghost.x and pacman.y == ghost.y:
+                if pacman.currentMode == "chasse":
+                    SCORE += 2000
+                    GHOSTS[ghost.x][ghost.y] = 0
+                    ghost.isAlive = False
+                else:
+                    GAME_OVER = True
 
+
+def checkWin():
+    global WIN
+    for x in range(LARGEUR):
+        for y in range(HAUTEUR):
+            if(GUM[x][y] == 1):
+                return 
+    WIN = True
 
 # endregion
 
@@ -826,6 +889,7 @@ def checkCollisionPacmanGhost(pacman, ghosts):
 iteration = 0
 tour_mode_chasseur = 0
 cooldown_bonus = 11
+UpdateDistanceMap(RESPAWN, DIST_RESPAWN)
 
 
 def PlayOneTurn():
@@ -856,6 +920,7 @@ def PlayOneTurn():
         if iteration % 2 == 0:
             IAPacman()
             UpdateDistanceMap(GUM, DIST_GUM)
+            checkWin()
         else:
             IAGhosts()
         checkCollisionPacmanGhost(pacman, Ghosts)
