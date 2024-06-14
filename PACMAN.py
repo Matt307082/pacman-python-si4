@@ -666,14 +666,8 @@ def IAGhosts():
 
         elif F.isAlive:
             if IsInCorridor(F):
-                if F.lastDirection == (0, -1):
-                    F.y -= 1
-                elif F.lastDirection == (0, 1):
-                    F.y += 1
-                elif F.lastDirection == (-1, 0):
-                    F.x -= 1
-                elif F.lastDirection == (1, 0):
-                    F.x += 1
+                F.x += F.lastDirection[0]
+                F.y += F.lastDirection[1]
 
             else:
                 L = F.GetPossibleMoves()
@@ -812,7 +806,7 @@ def UpdateDistanceMap(inputMap, outputMap):
                         outputMap[row+1][col] = outputMap[row][col]
                         outputMap[0][col] = outputMap[row][col]
 
-        # On test si on a modifié la carte (bug possible)
+        # On test si on a modifié la carte 
         hasBeenModified = HasBeenModified(outputMap, oldOutputMap)
 
 
